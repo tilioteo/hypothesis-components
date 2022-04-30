@@ -53,7 +53,12 @@ public class HTimerConnector extends AbstractNonVisualComponentConnector impleme
 
         });
 
-        addStateChangeHandler("direction", (StateChangeHandler) stateChangeEvent -> getWidget().setDirection(getState().direction.name()));
+        addStateChangeHandler("direction", new StateChangeHandler() {
+            @Override
+            public void onStateChanged(StateChangeEvent stateChangeEvent) {
+                HTimerConnector.this.getWidget().setDirection(HTimerConnector.this.getState().direction.name());
+            }
+        });
     }
 
     @Override

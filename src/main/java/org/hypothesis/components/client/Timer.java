@@ -1,6 +1,7 @@
 package org.hypothesis.components.client;
 
 import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.event.shared.EventHandler;
 import com.google.gwt.event.shared.GwtEvent;
 import com.google.gwt.event.shared.HandlerManager;
@@ -94,29 +95,6 @@ public class Timer {
 		}
 	}
 
-	/**
-	 * internal timer runs for 1 period of TIMER_TICK ms
-	 */
-	private final com.google.gwt.user.client.Timer internalTimer = new com.google.gwt.user.client.Timer() {
-		@Override
-		public void run() {
-			if (running) {
-				Scheduler.get().scheduleDeferred(() -> setElapsed());
-			}
-		}
-	};
-
-	public boolean isInfinite() {
-		return infinite;
-	}
-
-	protected void setInfinite(boolean infinite) {
-		this.infinite = infinite;
-		if (infinite) {
-			direction = Direction.UP;
-		}
-	}
-
 	public void start(long milliSeconds) {
 		if (milliSeconds < 0) {
 			setInfinite(true);
@@ -132,12 +110,46 @@ public class Timer {
 			else
 				counter = startCounter;
 
-			Scheduler.get().scheduleDeferred(() -> resume(true));
+			Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+				@Override
+				public void execute() {
+					Timer.this.resume(true);
+				}
+			});
 
 		} else {
 			startCounter = 0;
 		}
 	}
+
+	/**
+	 * internal timer runs for 1 period of TIMER_TICK ms
+	 */
+	private final com.google.gwt.user.client.Timer internalTimer = new com.google.gwt.user.client.Timer() {
+		@Override
+		public void run() {
+			if (running) {
+				Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+					@Override
+					public void execute() {
+						setElapsed();
+					}
+				});
+			}
+		}
+	};
+
+	public boolean isInfinite() {
+		return infinite;
+	}
+
+	protected void setInfinite(boolean infinite) {
+		this.infinite = infinite;
+		if (infinite) {
+			direction = Direction.UP;
+		}
+	}
+
 
 	private void stop(boolean pause, boolean silent) {
 		if (running) {

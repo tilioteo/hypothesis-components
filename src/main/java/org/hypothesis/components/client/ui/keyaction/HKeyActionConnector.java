@@ -1,7 +1,9 @@
 package org.hypothesis.components.client.ui.keyaction;
 
 import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.event.dom.client.KeyDownEvent;
+import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.user.client.Event;
 import com.vaadin.client.ServerConnector;
 import com.vaadin.client.extensions.AbstractExtensionConnector;
@@ -20,9 +22,12 @@ public class HKeyActionConnector extends AbstractExtensionConnector {
     protected void extend(ServerConnector target) {
         AbstractComponentConnector connector = (AbstractComponentConnector) target;
 
-        connector.getWidget().addDomHandler(event -> {
-            if (match(event)) {
-                triggerEvent(event);
+        connector.getWidget().addDomHandler(new KeyDownHandler() {
+            @Override
+            public void onKeyDown(KeyDownEvent event) {
+                if (HKeyActionConnector.this.match(event)) {
+                    HKeyActionConnector.this.triggerEvent(event);
+                }
             }
         }, KeyDownEvent.getType());
 
@@ -38,13 +43,16 @@ public class HKeyActionConnector extends AbstractExtensionConnector {
 
         // Deferred so keypress + keyup can be handled before this happens so
         // pressing enter in a text area does not cause the enter to be lost
-        Scheduler.get().scheduleDeferred(() -> {
-            if (getParent() instanceof BeforeShortcutActionListener) {
-                ((BeforeShortcutActionListener) getParent())
-                        .onBeforeShortcutAction(Event.as(event.getNativeEvent()));
-            }
+        Scheduler.get().scheduleDeferred(new ScheduledCommand() {
+            @Override
+            public void execute() {
+                if (HKeyActionConnector.this.getParent() instanceof BeforeShortcutActionListener) {
+                    ((BeforeShortcutActionListener) HKeyActionConnector.this.getParent())
+                            .onBeforeShortcutAction(Event.as(event.getNativeEvent()));
+                }
 
-            getRpcProxy(HKeyActionServerRpc.class).trigger(DateUtility.getTimestamp());
+                HKeyActionConnector.this.getRpcProxy(HKeyActionServerRpc.class).trigger(DateUtility.getTimestamp());
+            }
         });
     }
 

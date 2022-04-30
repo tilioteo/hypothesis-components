@@ -31,40 +31,46 @@ public abstract class SelectButtonConnector extends AbstractFieldConnector
 		super.init();
 		getWidget().addClickHandler(this);
 		getWidget().client = getConnection();
-		addStateChangeHandler("errorMessage", (StateChangeHandler) stateChangeEvent -> {
-			if (null != getState().errorMessage) {
-				if (getWidget().errorIndicatorElement == null) {
-					getWidget().errorIndicatorElement = DOM.createSpan();
-					getWidget().errorIndicatorElement
-							.setClassName("v-errorindicator");
-				}
-				getWidget().wrapper.insertBefore(
-						getWidget().errorIndicatorElement,
-						getWidget().captionElement);
+		addStateChangeHandler("errorMessage", new StateChangeHandler() {
+			@Override
+			public void onStateChanged(StateChangeEvent stateChangeEvent) {
+				if (null != SelectButtonConnector.this.getState().errorMessage) {
+					if (SelectButtonConnector.this.getWidget().errorIndicatorElement == null) {
+						SelectButtonConnector.this.getWidget().errorIndicatorElement = DOM.createSpan();
+						SelectButtonConnector.this.getWidget().errorIndicatorElement
+								.setClassName("v-errorindicator");
+					}
+					SelectButtonConnector.this.getWidget().wrapper.insertBefore(
+							SelectButtonConnector.this.getWidget().errorIndicatorElement,
+							SelectButtonConnector.this.getWidget().captionElement);
 
-			} else if (getWidget().errorIndicatorElement != null) {
-				getWidget().wrapper
-						.removeChild(getWidget().errorIndicatorElement);
-				getWidget().errorIndicatorElement = null;
+				} else if (SelectButtonConnector.this.getWidget().errorIndicatorElement != null) {
+					SelectButtonConnector.this.getWidget().wrapper
+							.removeChild(SelectButtonConnector.this.getWidget().errorIndicatorElement);
+					SelectButtonConnector.this.getWidget().errorIndicatorElement = null;
+				}
 			}
 		});
 
-		addStateChangeHandler("resources", (StateChangeHandler) stateChangeEvent -> {
-			if (getIcon() != null) {
-				/*
-				 * if (getWidget().icon == null) { getWidget().icon = new
-				 * Icon(getConnection()); getWidget().wrapper.insertBefore(
-				 * getWidget().icon.getElement(),
-				 * getWidget().captionElement); }
-				 * getWidget().icon.setUri(getIcon());
-				 * getWidget().icon.setAlternateText
-				 * (getState().iconAltText);
-				 */
-			} else {
-				if (getWidget().icon != null) {
-					getWidget().wrapper.removeChild(getWidget().icon
-							.getElement());
-					getWidget().icon = null;
+		addStateChangeHandler("resources", new StateChangeHandler() {
+			@Override
+			public void onStateChanged(StateChangeEvent stateChangeEvent) {
+				if (SelectButtonConnector.this.getIcon() != null) {
+					/*
+					 * if (getWidget().icon == null) { getWidget().icon = new
+					 * Icon(getConnection()); getWidget().wrapper.insertBefore(
+					 * getWidget().icon.getElement(),
+					 * getWidget().captionElement); }
+					 * getWidget().icon.setUri(getIcon());
+					 * getWidget().icon.setAlternateText
+					 * (getState().iconAltText);
+					 */
+				} else {
+					if (SelectButtonConnector.this.getWidget().icon != null) {
+						SelectButtonConnector.this.getWidget().wrapper.removeChild(SelectButtonConnector.this.getWidget().icon
+								.getElement());
+						SelectButtonConnector.this.getWidget().icon = null;
+					}
 				}
 			}
 		});
