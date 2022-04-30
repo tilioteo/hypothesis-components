@@ -46,6 +46,10 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
 	</repositories>
 
 	<pluginRepositories>
@@ -74,8 +78,8 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.hypothesis</groupId>
-			<artifactId>commons</artifactId>
+			<groupId>com.github.tilioteo</groupId>
+			<artifactId>hypothesis-commons</artifactId>
 			<version>${hypothesis.commons.version}</version>
 			<scope>provided</scope>
 		</dependency>
