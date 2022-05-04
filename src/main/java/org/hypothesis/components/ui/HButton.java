@@ -1,5 +1,6 @@
 package org.hypothesis.components.ui;
 
+import com.tilioteo.common.event.TimekeepingComponentEvent;
 import com.vaadin.event.Action;
 import com.vaadin.event.FieldEvents;
 import com.vaadin.event.FieldEvents.*;
@@ -17,7 +18,6 @@ import com.vaadin.ui.declarative.DesignAttributeHandler;
 import com.vaadin.ui.declarative.DesignContext;
 import com.vaadin.util.ReflectTools;
 import org.hypothesis.components.shared.ui.button.HButtonServerRpc;
-import org.hypothesis.ui.event.TimekeepingComponentEvent;
 import org.jsoup.nodes.Attributes;
 import org.jsoup.nodes.Element;
 

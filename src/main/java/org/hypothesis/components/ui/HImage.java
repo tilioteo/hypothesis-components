@@ -1,5 +1,7 @@
 package org.hypothesis.components.ui;
 
+import com.tilioteo.common.event.MouseEvents;
+import com.tilioteo.common.event.TimekeepingComponentEvent;
 import com.vaadin.event.ConnectorEventListener;
 import com.vaadin.server.Resource;
 import com.vaadin.shared.MouseEventDetails;
@@ -10,8 +12,6 @@ import com.vaadin.util.ReflectTools;
 import org.hypothesis.components.shared.HEventId;
 import org.hypothesis.components.shared.ui.image.HImageServerRpc;
 import org.hypothesis.interfaces.mask.Maskable;
-import org.hypothesis.ui.event.MouseEvents;
-import org.hypothesis.ui.event.TimekeepingComponentEvent;
 
 import java.lang.reflect.Method;
 

@@ -1,5 +1,6 @@
 package org.hypothesis.components.ui;
 
+import com.tilioteo.common.event.MouseEvents;
 import com.vaadin.event.ConnectorEventListener;
 import com.vaadin.server.Resource;
 import com.vaadin.shared.EventId;
@@ -11,7 +12,6 @@ import org.hypothesis.components.shared.ui.video.HVideoServerRpc;
 import org.hypothesis.components.shared.ui.video.HVideoState;
 import org.hypothesis.components.ui.Media.*;
 import org.hypothesis.interfaces.mask.Maskable;
-import org.hypothesis.ui.event.MouseEvents;
 
 import java.lang.reflect.Method;
 

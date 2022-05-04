@@ -1,10 +1,10 @@
 package org.hypothesis.components.ui;
 
+import com.tilioteo.common.event.TimekeepingComponentEvent;
 import com.vaadin.event.ConnectorEventListener;
 import com.vaadin.ui.AbstractMedia;
 import com.vaadin.ui.Component;
 import com.vaadin.util.ReflectTools;
-import org.hypothesis.ui.event.TimekeepingComponentEvent;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;

@@ -1,5 +1,6 @@
 package org.hypothesis.components.ui;
 
+import com.tilioteo.common.event.TimekeepingComponentEvent;
 import com.vaadin.event.ConnectorEventListener;
 import com.vaadin.event.ShortcutAction.ModifierKey;
 import com.vaadin.server.AbstractExtension;
@@ -8,7 +9,6 @@ import com.vaadin.ui.Component;
 import com.vaadin.util.ReflectTools;
 import org.hypothesis.components.shared.ui.keyaction.HKeyActionServerRpc;
 import org.hypothesis.components.shared.ui.keyaction.HKeyActionState;
-import org.hypothesis.ui.event.TimekeepingComponentEvent;
 
 import java.lang.reflect.Method;
 import java.util.Map.Entry;

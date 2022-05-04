@@ -1,12 +1,12 @@
 package org.hypothesis.components.ui;
 
+import com.tilioteo.common.event.TimekeepingComponentEvent;
 import com.vaadin.event.ConnectorEventListener;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.util.ReflectTools;
-import org.hypothesis.ui.event.TimekeepingComponentEvent;
 
 import java.lang.reflect.Method;
 import java.util.Date;
