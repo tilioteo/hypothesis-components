@@ -7,16 +7,18 @@ import com.vaadin.ui.Window;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class HWindow extends Window {
 
     private static final Method WINDOW_INIT_METHOD;
     private static final Method WINDOW_OPEN_METHOD;
+    private static final Method WINDOW_CLOSE_METHOD;
 
     static {
         try {
-            WINDOW_INIT_METHOD = InitListener.class.getDeclaredMethod("initWindow", InitEvent.class);
+            WINDOW_INIT_METHOD = InitListener.class.getDeclaredMethod("initWindow", WindowEvent.Init.class);
         } catch (final NoSuchMethodException e) {
             // This should never happen
             throw new RuntimeException("Internal error, window init method not found");
@@ -25,10 +27,19 @@ public class HWindow extends Window {
 
     static {
         try {
-            WINDOW_OPEN_METHOD = OpenListener.class.getDeclaredMethod("openWindow", OpenEvent.class);
+            WINDOW_OPEN_METHOD = OpenListener.class.getDeclaredMethod("openWindow", WindowEvent.Open.class);
         } catch (final NoSuchMethodException e) {
             // This should never happen
             throw new RuntimeException("Internal error, window open method not found");
+        }
+    }
+
+    static {
+        try {
+            WINDOW_CLOSE_METHOD = CloseListener.class.getDeclaredMethod("closeWindow", WindowEvent.Close.class);
+        } catch (final NoSuchMethodException e) {
+            // This should never happen
+            throw new RuntimeException("Internal error, window close method not found");
         }
     }
 
@@ -48,9 +59,14 @@ public class HWindow extends Window {
     protected void fireOpen() {
         if (!initialized) {
             initialized = true;
-            fireEvent(new InitEvent(this));
+            fireEvent(new WindowEvent.Init(this));
         }
-        fireEvent(new OpenEvent(this));
+        fireEvent(new WindowEvent.Open(this));
+    }
+
+    @Override
+    protected void fireClose() {
+        this.fireEvent(new WindowEvent.Close(this));
     }
 
     @Override
@@ -88,7 +104,7 @@ public class HWindow extends Window {
      * @param listener The listener to add
      */
     public void addInitListener(InitListener listener) {
-        addListener(InitEvent.class, listener, WINDOW_INIT_METHOD);
+        addListener(WindowEvent.Init.class, listener, WINDOW_INIT_METHOD);
     }
 
     /**
@@ -98,7 +114,7 @@ public class HWindow extends Window {
      * @param listener The listener to remove
      */
     public void removeInitListener(InitListener listener) {
-        removeListener(InitEvent.class, listener, WINDOW_INIT_METHOD);
+        removeListener(WindowEvent.Init.class, listener, WINDOW_INIT_METHOD);
     }
 
     /**
@@ -110,7 +126,7 @@ public class HWindow extends Window {
      * @param listener The listener to add
      */
     public void addOpenListener(OpenListener listener) {
-        addListener(OpenEvent.class, listener, WINDOW_OPEN_METHOD);
+        addListener(WindowEvent.Open.class, listener, WINDOW_OPEN_METHOD);
     }
 
     /**
@@ -120,13 +136,31 @@ public class HWindow extends Window {
      * @param listener The listener to remove
      */
     public void removeOpenListener(OpenListener listener) {
-        removeListener(OpenEvent.class, listener, WINDOW_OPEN_METHOD);
+        removeListener(WindowEvent.Open.class, listener, WINDOW_OPEN_METHOD);
     }
 
-    @Override
+    /**
+     * Add a close listener to the component. The listener is called whenever
+     * the window is closed.
+     * <p>
+     * Use {@link #removeCloseListener(CloseListener)} to remove the listener.
+     *
+     * @param listener The listener to add
+     */
     public void addCloseListener(CloseListener listener) {
-        super.addCloseListener(listener);
+        addListener(WindowEvent.Close.class, listener, WINDOW_CLOSE_METHOD);
         closeListeners.add(listener);
+    }
+
+    /**
+     * Remove a close listener from the component. The listener should earlier
+     * have been added using {@link #addCloseListener(CloseListener)}.
+     *
+     * @param listener The listener to remove
+     */
+    public void removeCloseListener(CloseListener listener) {
+        removeListener(WindowEvent.Close.class, listener, WINDOW_CLOSE_METHOD);
+        closeListeners.remove(listener);
     }
 
     public void removeAllCloseListeners() {
@@ -137,53 +171,63 @@ public class HWindow extends Window {
     }
 
     /**
-     * Interface for listening for a {@link InitEvent} fired by a {@link org.hypothesis.components.ui.HWindow}
+     * Interface for listening for a {@link WindowEvent.Init} fired by a {@link org.hypothesis.components.ui.HWindow}
      * when user opens the window for the first time.
      *
-     * @author kamil
-     * @see InitEvent
+     * @see WindowEvent.Init
      */
     public interface InitListener extends Serializable {
 
         /**
          * Called when the user opens a window for first time. A reference to
-         * the window is given by {@link InitEvent#getWindow()}.
+         * the window is given by {@link WindowEvent.Init#getWindow()}.
          *
          * @param event An event containing information about the window.
          */
-        void initWindow(InitEvent event);
+        void initWindow(WindowEvent.Init event);
     }
 
     /**
-     * Interface for listening for a {@link OpenEvent} fired by a {@link org.hypothesis.components.ui.HWindow}
+     * Interface for listening for a {@link WindowEvent.Open} fired by a {@link org.hypothesis.components.ui.HWindow}
      * whenever the user opens the window.
      *
-     * @author kamil
-     * @see OpenEvent
+     * @see WindowEvent.Open
      */
     public interface OpenListener extends Serializable {
 
         /**
          * Called whenever the user opens a window. A reference to the window is
-         * given by {@link OpenEvent#getWindow()}.
+         * given by {@link WindowEvent.Open#getWindow()}.
          *
          * @param event An event containing information about the window.
          */
-        void openWindow(OpenEvent event);
+        void openWindow(WindowEvent.Open event);
     }
 
     /**
-     * Class for holding information about a window init event. An
-     * {@link InitEvent} is fired when the <code>Window</code> is opened for the
-     * first time.
+     * Interface for listening for a {@link WindowEvent.Close} fired by a {@link org.hypothesis.components.ui.HWindow}
+     * whenever the user closes the window.
      *
-     * @author kamil.
-     * @see InitListener
+     * @see WindowEvent.Close
      */
-    public static class InitEvent extends Event {
+    public interface CloseListener extends Serializable {
 
-        public InitEvent(Component source) {
+        /**
+         * Called whenever the user closes a window. A reference to the window is
+         * given by {@link WindowEvent.Close#getWindow()}.
+         *
+         * @param event An event containing information about the window.
+         */
+        void closeWindow(WindowEvent.Close event);
+    }
+
+    public static abstract class WindowEvent extends Event {
+
+        private final LocalDateTime timestamp;
+
+        protected WindowEvent(Component source) {
             super(source);
+            this.timestamp = LocalDateTime.now();
         }
 
         /**
@@ -194,28 +238,49 @@ public class HWindow extends Window {
         public Window getWindow() {
             return (Window) getSource();
         }
-    }
 
-    /**
-     * Class for holding information about a window open event. An
-     * {@link OpenEvent} is fired whenever the <code>Window</code> is opened.
-     *
-     * @author kamil.
-     * @see OpenListener
-     */
-    public static class OpenEvent extends Event {
-
-        public OpenEvent(Component source) {
-            super(source);
+        public LocalDateTime getTimestamp() {
+            return timestamp;
         }
 
         /**
-         * Gets the Window.
+         * Class for holding information about a window init event. An
+         * {@link Init} is fired when the <code>Window</code> is opened for the
+         * first time.
          *
-         * @return the window.
+         * @see InitListener
          */
-        public Window getWindow() {
-            return (Window) getSource();
+        public static class Init extends WindowEvent {
+
+            public Init(Component source) {
+                super(source);
+            }
+        }
+
+        /**
+         * Class for holding information about a window open event. An
+         * {@link Open} is fired whenever the <code>Window</code> is opened.
+         *
+         * @see OpenListener
+         */
+        public static class Open extends WindowEvent {
+
+            public Open(Component source) {
+                super(source);
+            }
+        }
+
+        /**
+         * Class for holding information about a window close event. An
+         * {@link Close} is fired whenever the <code>Window</code> is closed.
+         *
+         * @see CloseListener
+         */
+        public static class Close extends WindowEvent {
+
+            public Close(Component source) {
+                super(source);
+            }
         }
     }
 
