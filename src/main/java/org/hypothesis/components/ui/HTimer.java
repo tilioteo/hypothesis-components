@@ -1,5 +1,6 @@
 package org.hypothesis.components.ui;
 
+import com.tilioteo.common.event.TimekeepingComponentEvent;
 import com.vaadin.event.EventRouter;
 import com.vaadin.shared.communication.PushMode;
 import com.vaadin.shared.ui.ComponentStateUtil;
@@ -23,18 +24,24 @@ import java.util.*;
  */
 public class HTimer extends AbstractComponent implements NonVisualComponent {
 
+    private final HTimerClientRpc clientRpc;
+    private final HashMap<Long, EventRouter> eventRouterMap = new HashMap<>();
+    private Date stopTime;
+    private long startCounter = 0;
+    private long counter = 0;
+    private boolean running = false;
+    private long elapsed = 0;
+    private Date startTime;
     private final HTimerServerRpc rpc = new HTimerServerRpc() {
 
         @Override
         public void started(long timestamp, long time, String direction, boolean resumed) {
-            clientStarted(timestamp, resumed);
-            //fireEvent(new StartEvent(Timer.this, time, Direction.valueOf(direction), resumed));
+            fireEvent(new StartEvent(timestamp, startTime, HTimer.this, time, Direction.valueOf(direction), resumed));
         }
 
         @Override
         public void stopped(long timestamp, long time, String direction, boolean paused) {
-            //clientStopped(timestamp, paused);
-            //fireEvent(new StopEvent(Timer.this, time, Direction.valueOf(direction), paused));
+            fireEvent(new StopEvent(timestamp, stopTime, HTimer.this, time, Direction.valueOf(direction), paused));
         }
 
         @Override
@@ -47,15 +54,6 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
         }
 
     };
-    private final HTimerClientRpc clientRpc;
-    private final HashMap<Long, EventRouter> eventRouterMap = new HashMap<>();
-    protected long serverStartTimestamp;
-    protected long clientStartTimestamp;
-    private long startCounter = 0;
-    private long counter = 0;
-    private boolean running = false;
-    private long elapsed = 0;
-    private Date startTime;
     private boolean infinite = false;
     private long time = 0;
     private transient Timer internalTimer;
@@ -63,12 +61,6 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
     public HTimer() {
         registerRpc(rpc);
         clientRpc = getRpcProxy(HTimerClientRpc.class);
-    }
-
-    protected void clientStopped(long timestamp, boolean paused) {
-    }
-
-    protected void clientStarted(long timestamp, boolean resumed) {
     }
 
     @Override
@@ -94,7 +86,7 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
                 counter = startCounter;
             }
 
-            resume(true);
+            resume();
 
         } else {
             startCounter = 0;
@@ -105,13 +97,11 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
         start(getTime());
     }
 
-    protected void resume(boolean started) {
+    protected void resume() {
         if (!running) {
             running = true;
-            clientRpc.start(time);
-            serverStartTimestamp = (new Date()).getTime();
-            fireEvent(new StartEvent(HTimer.this, counter, getState().direction, !started));
             startTime = new Date();
+            clientRpc.start(time);
             internalTimer = new Timer();
             internalTimer.scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -144,7 +134,8 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
             if (ui != null) {
                 ui.access/*Synchronously*/(() -> {
                     try {
-                        fireEvent(new StopEvent(HTimer.this, counter, getState().direction, false));
+                        stopTime = new Date();
+                        clientRpc.stop(false);
                         if (PushMode.MANUAL.equals(ui.getPushConfiguration().getPushMode())) {
                             try {
                                 ui.push();
@@ -183,7 +174,7 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
                 if (ui != null) {
                     ui.access/*Synchronously*/(() -> {
                         try {
-                            eventRouterMap.get(timeSlice).fireEvent(new UpdateEvent(HTimer.this, counter, getState().direction, timeSlice));
+                            eventRouterMap.get(timeSlice).fireEvent(new UpdateEvent(0, new Date(), HTimer.this, counter, getState().direction, timeSlice));
                             if (PushMode.MANUAL.equals(ui.getPushConfiguration().getPushMode())) {
                                 try {
                                     ui.push();
@@ -230,7 +221,8 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
                 if (ui != null) {
                     ui.access/*Synchronously*/(() -> {
                         try {
-                            fireEvent(new StopEvent(HTimer.this, counter, getState().direction, false));
+                            stopTime = new Date();
+                            clientRpc.stop(silent);
                             if (PushMode.MANUAL.equals(ui.getPushConfiguration().getPushMode())) {
                                 try {
                                     ui.push();
@@ -393,13 +385,16 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
 
     }
 
-    public abstract static class TimerEvent extends Component.Event {
+    public abstract static class TimerEvent extends TimekeepingComponentEvent {
+
+        private final Date serverTimestamp;
 
         private final long time;
         private final Direction direction;
 
-        protected TimerEvent(Component source, long time, Direction direction) {
-            super(source);
+        protected TimerEvent(long timestamp, Date serverTimestamp, Component source, long time, Direction direction) {
+            super(timestamp, source);
+            this.serverTimestamp = serverTimestamp;
             this.time = time;
             this.direction = direction;
         }
@@ -411,6 +406,16 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
         public Direction getDirection() {
             return direction;
         }
+
+        @Override
+        public long getServerTimestamp() {
+            return this.serverTimestamp.getTime();
+        }
+
+        @Override
+        public Date getServerDatetime() {
+            return this.serverTimestamp;
+        }
     }
 
     public static class StartEvent extends TimerEvent {
@@ -419,8 +424,8 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
 
         private final boolean resumed;
 
-        public StartEvent(Component source, long time, Direction direction, boolean resumed) {
-            super(source, time, direction);
+        public StartEvent(long timestamp, Date serverTimestamp, Component source, long time, Direction direction, boolean resumed) {
+            super(timestamp, serverTimestamp, source, time, direction);
             this.resumed = resumed;
         }
 
@@ -435,8 +440,8 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
 
         private final boolean paused;
 
-        public StopEvent(Component source, long time, Direction direction, boolean paused) {
-            super(source, time, direction);
+        public StopEvent(long timestamp, Date serverTimestamp, Component source, long time, Direction direction, boolean paused) {
+            super(timestamp, serverTimestamp, source, time, direction);
             this.paused = paused;
         }
 
@@ -451,8 +456,8 @@ public class HTimer extends AbstractComponent implements NonVisualComponent {
 
         private final long interval;
 
-        public UpdateEvent(Component source, long time, Direction direction, long interval) {
-            super(source, time, direction);
+        public UpdateEvent(long timestamp, Date serverTimestamp, Component source, long time, Direction direction, long interval) {
+            super(timestamp, serverTimestamp, source, time, direction);
             this.interval = interval;
         }
 
